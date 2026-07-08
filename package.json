@@ -1,0 +1,32 @@
+{
+  "name": "skill-queue-doctor",
+  "version": "0.1.0",
+  "description": "Audit and replenish local agent-skill idea queues without external side effects.",
+  "type": "module",
+  "bin": {
+    "skill-queue-doctor": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/*.js test/*.test.js",
+    "smoke": "node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format markdown"
+  },
+  "keywords": [
+    "agent-skills",
+    "oss",
+    "queue",
+    "dry-run",
+    "prd"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src",
+    "docs",
+    "fixtures",
+    "SKILL.md",
+    "README.md"
+  ]
+}
