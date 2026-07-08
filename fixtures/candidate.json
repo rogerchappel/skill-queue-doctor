@@ -1,0 +1,24 @@
+{
+  "name": "skill-doc-refresh-skill",
+  "summary": "Draft a skill PRD for refreshing stale documentation from local repo evidence.",
+  "problem": "Skill repositories drift when examples and validation notes are not revisited after implementation changes.",
+  "users": [
+    "Agent skill maintainers",
+    "Release-candidate reviewers"
+  ],
+  "mvp": [
+    "Scan local docs for stale command references",
+    "Generate a reviewable refresh plan",
+    "Emit markdown and JSON outputs"
+  ],
+  "safety": [
+    "Read-only scan by default",
+    "No repository writes",
+    "No network calls"
+  ],
+  "verification": [
+    "Fixture-backed tests",
+    "CLI smoke command",
+    "Manual review checklist"
+  ]
+}
