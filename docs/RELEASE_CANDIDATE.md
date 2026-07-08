@@ -6,10 +6,10 @@ ship
 
 ## Verification plan
 
-- `npm test`
-- `npm run check`
-- `npm run smoke`
-- `node src/cli.js draft fixtures/candidate.json --out /tmp/skill-queue-doctor-drafts --force`
+- `npm test` - pass, 6 tests
+- `npm run check` - pass
+- `npm run smoke` - pass, reports ready shortage and duplicate fixtures
+- `node src/cli.js draft fixtures/candidate.json --out /tmp/skill-queue-doctor-drafts` - pass
 
 ## Dry-run guarantees
 
