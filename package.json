@@ -9,7 +9,9 @@
   "scripts": {
     "test": "node --test",
     "check": "node --check src/*.js test/*.test.js",
-    "smoke": "node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format markdown"
+    "smoke": "node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format markdown",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "agent-skills",
@@ -28,5 +30,9 @@
     "fixtures",
     "SKILL.md",
     "README.md"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/skill-queue-doctor.git"
+  }
 }
