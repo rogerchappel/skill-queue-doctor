@@ -4,9 +4,21 @@ import { auditQueue, parseRepoInventory } from './audit.js';
 import { writeDraft } from './draft.js';
 import { formatJsonReport, formatMarkdownReport } from './report.js';
 
+const VERSION = '0.1.0';
+
 async function main(argv) {
   const [command, first, ...rest] = argv;
   const flags = parseFlags(rest);
+
+  if (!command || command === '--help' || command === '-h') {
+    process.stdout.write(helpText());
+    return;
+  }
+
+  if (command === '--version' || command === '-v') {
+    process.stdout.write(`${VERSION}\n`);
+    return;
+  }
 
   if (command === 'audit') {
     if (!first) {
@@ -30,6 +42,19 @@ async function main(argv) {
   }
 
   throw new Error('usage: skill-queue-doctor <audit|draft> ...');
+}
+
+function helpText() {
+  return `skill-queue-doctor ${VERSION}
+
+Usage:
+  skill-queue-doctor audit <ideas-dir> [--repos repos.txt] [--format json|markdown]
+  skill-queue-doctor draft <candidate.json> --out <dir> [--force]
+
+Options:
+  -h, --help       Show this help.
+  -v, --version    Show the CLI version.
+`;
 }
 
 function parseFlags(args) {

@@ -5,6 +5,16 @@
 ## Quickstart
 
 ```sh
+npm install -g skill-queue-doctor
+skill-queue-doctor --help
+skill-queue-doctor --version
+skill-queue-doctor audit fixtures/queue --repos fixtures/repos.txt --format json
+skill-queue-doctor draft fixtures/candidate.json --out tmp-drafts
+```
+
+For local development:
+
+```sh
 npm test
 npm run smoke
 node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format json
