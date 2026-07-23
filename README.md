@@ -24,9 +24,16 @@ node src/cli.js draft fixtures/candidate.json --out tmp-drafts
 ## What it checks
 
 - expected queue folders: `ready`, `in-progress`, and `built`
-- markdown PRDs with missing or unknown `Status:` values
+- markdown PRDs with missing or unknown `Status:` values, or a known status that
+  does not match the containing lane
 - duplicate idea names that already exist in a repo inventory
 - ready-lane shortages
+
+Lane counts include only PRDs whose normalized `Status:` matches their
+`ready`, `in-progress`, or `built` folder. Files with missing, unknown, or
+misplaced statuses remain listed in report details and produce warnings, but
+do not satisfy lane inventory. Consequently, the ready shortage is calculated
+only from PRDs with `Status: ready` inside the `ready` folder.
 
 ## Safety
 

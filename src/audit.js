@@ -34,6 +34,13 @@ export async function auditQueue(ideasDir, options = {}) {
         warnings.push({ lane, file, code: 'missing-status', message: 'Missing Status line' });
       } else if (!KNOWN_STATUSES.has(status)) {
         warnings.push({ lane, file, code: 'unknown-status', message: `Unknown status: ${status}` });
+      } else if (status !== lane) {
+        warnings.push({
+          lane,
+          file,
+          code: 'status-lane-mismatch',
+          message: `Status ${status} does not match containing lane ${lane}`
+        });
       }
 
       if (repoNames.has(slug)) {
@@ -43,7 +50,10 @@ export async function auditQueue(ideasDir, options = {}) {
       parsed.push({ file, slug, status });
     }
 
-    lanes[lane] = { count: parsed.length, files: parsed };
+    lanes[lane] = {
+      count: parsed.filter(({ status }) => status === lane).length,
+      files: parsed
+    };
   }
 
   return {
