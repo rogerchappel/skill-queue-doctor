@@ -6,9 +6,10 @@ import { formatJsonReport, formatMarkdownReport } from './report.js';
 
 const VERSION = '0.1.0';
 
+class UsageError extends Error {}
+
 async function main(argv) {
-  const [command, first, ...rest] = argv;
-  const flags = parseFlags(rest);
+  const [command, ...args] = argv;
 
   if (!command || command === '--help' || command === '-h') {
     process.stdout.write(helpText());
@@ -21,9 +22,9 @@ async function main(argv) {
   }
 
   if (command === 'audit') {
-    if (!first) {
-      throw new Error('usage: skill-queue-doctor audit <ideas-dir> [--repos repos.txt] [--format json|markdown]');
-    }
+    const { positional: first, flags } = parseCommandArgs('audit', args, {
+      values: ['repos', 'format'],
+    });
     const repoNames = flags.repos ? parseRepoInventory(await readFile(flags.repos, 'utf8')) : [];
     const report = await auditQueue(first, { repoNames });
     const format = flags.format ?? 'markdown';
@@ -32,16 +33,18 @@ async function main(argv) {
   }
 
   if (command === 'draft') {
-    if (!first || !flags.out) {
-      throw new Error('usage: skill-queue-doctor draft <candidate.json> --out <dir> [--force]');
-    }
+    const { positional: first, flags } = parseCommandArgs('draft', args, {
+      values: ['out'],
+      booleans: ['force'],
+      required: ['out'],
+    });
     const candidate = JSON.parse(await readFile(first, 'utf8'));
     const target = await writeDraft(candidate, flags.out, { force: flags.force === true });
     process.stdout.write(`${target}\n`);
     return;
   }
 
-  throw new Error('usage: skill-queue-doctor <audit|draft> ...');
+  throw usageError(`unknown command: ${command}`, 'skill-queue-doctor <audit|draft> ...');
 }
 
 function helpText() {
@@ -54,29 +57,63 @@ Usage:
 Options:
   -h, --help       Show this help.
   -v, --version    Show the CLI version.
+
+Usage errors exit with status 2. Runtime errors exit with status 1.
 `;
 }
 
-function parseFlags(args) {
+function parseCommandArgs(command, args, schema) {
   const flags = {};
+  let positional;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (!arg.startsWith('--')) {
+      if (positional) {
+        throw usageError(`unexpected argument: ${arg}`, commandUsage(command));
+      }
+      positional = arg;
       continue;
     }
     const key = arg.slice(2);
+    if (schema.booleans?.includes(key)) {
+      flags[key] = true;
+      continue;
+    }
+    if (!schema.values.includes(key)) {
+      throw usageError(`unknown option: ${arg}`, commandUsage(command));
+    }
     const next = args[index + 1];
     if (!next || next.startsWith('--')) {
-      flags[key] = true;
-    } else {
-      flags[key] = next;
-      index += 1;
+      throw usageError(`option ${arg} requires a value`, commandUsage(command));
+    }
+    flags[key] = next;
+    index += 1;
+  }
+  if (!positional) {
+    throw usageError(`missing required argument for ${command}`, commandUsage(command));
+  }
+  for (const key of schema.required ?? []) {
+    if (!flags[key]) {
+      throw usageError(`missing required option: --${key}`, commandUsage(command));
     }
   }
-  return flags;
+  if (command === 'audit' && flags.format && !['json', 'markdown'].includes(flags.format)) {
+    throw usageError(`unsupported --format value: ${flags.format}`, commandUsage(command));
+  }
+  return { positional, flags };
+}
+
+function commandUsage(command) {
+  return command === 'audit'
+    ? 'skill-queue-doctor audit <ideas-dir> [--repos repos.txt] [--format json|markdown]'
+    : 'skill-queue-doctor draft <candidate.json> --out <dir> [--force]';
+}
+
+function usageError(message, usage) {
+  return new UsageError(`${message}\nUsage: ${usage}`);
 }
 
 main(process.argv.slice(2)).catch((error) => {
   process.stderr.write(`${error.message}\n`);
-  process.exitCode = 1;
+  process.exitCode = error instanceof UsageError ? 2 : 1;
 });
