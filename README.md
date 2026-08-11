@@ -21,6 +21,10 @@ node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format json
 node src/cli.js draft fixtures/candidate.json --out tmp-drafts
 ```
 
+Invalid commands, unknown options, extra arguments, missing option values, and unsupported
+`--format` values print actionable usage text and exit with status `2`. Operational failures,
+such as unreadable inputs, exit with status `1`; successful commands exit with status `0`.
+
 ## What it checks
 
 - expected queue folders: `ready`, `in-progress`, and `built`
