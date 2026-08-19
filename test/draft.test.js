@@ -26,6 +26,27 @@ test('validates required arrays', () => {
   assert.throws(() => validateCandidate({ ...candidate, safety: [] }), /candidate.safety/u);
 });
 
+test('rejects blank scalar fields with field-specific errors', () => {
+  for (const key of ['name', 'summary', 'problem']) {
+    assert.throws(
+      () => validateCandidate({ ...candidate, [key]: ' \t ' }),
+      new RegExp(`candidate\\.${key} must be a non-empty string`, 'u'),
+    );
+  }
+});
+
+test('rejects malformed list elements with field and index', () => {
+  const invalidValues = [{ role: 'maintainer' }, 42, true, null, '   '];
+  for (const key of ['users', 'mvp', 'safety', 'verification']) {
+    for (const value of invalidValues) {
+      assert.throws(
+        () => validateCandidate({ ...candidate, [key]: ['valid', value] }),
+        new RegExp(`candidate\\.${key}\\[1\\] must be a non-empty string`, 'u'),
+      );
+    }
+  }
+});
+
 test('writes a draft without overwriting by default', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'skill-queue-doctor-'));
   try {

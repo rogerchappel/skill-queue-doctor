@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
@@ -37,15 +40,36 @@ test('accepts documented audit option forms', async () => {
 });
 
 test('accepts documented draft options including --force', async () => {
-  const { mkdtemp, rm } = await import('node:fs/promises');
-  const { tmpdir } = await import('node:os');
-  const { join } = await import('node:path');
   const output = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-cli-'));
   try {
     await execFileAsync('node', ['src/cli.js', 'draft', 'fixtures/candidate.json', '--out', output]);
     await execFileAsync('node', ['src/cli.js', 'draft', 'fixtures/candidate.json', '--out', output, '--force']);
   } finally {
     await rm(output, { recursive: true, force: true });
+  }
+});
+
+test('rejects malformed draft values without creating a draft', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-invalid-'));
+  const input = join(workspace, 'candidate.json');
+  const output = join(workspace, 'drafts');
+  const malformed = {
+    name: 'bad-draft', summary: 'Summary', problem: 'Problem', users: ['Maintainers'],
+    mvp: ['Render markdown'], safety: [false], verification: ['Run tests'],
+  };
+  try {
+    await writeFile(input, JSON.stringify(malformed));
+    await assert.rejects(
+      execFileAsync('node', ['src/cli.js', 'draft', input, '--out', output]),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /candidate\.safety\[0\] must be a non-empty string/u);
+        return true;
+      },
+    );
+    await assert.rejects(readFile(join(output, 'bad-draft.md')), /ENOENT/u);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
   }
 });
 
