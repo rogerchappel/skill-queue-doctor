@@ -25,6 +25,12 @@ Invalid commands, unknown options, extra arguments, missing option values, and u
 `--format` values print actionable usage text and exit with status `2`. Operational failures,
 such as unreadable inputs, exit with status `1`; successful commands exit with status `0`.
 
+Draft candidate JSON must be an object whose `name`, `summary`, and `problem` values are
+non-empty strings (`name` must also be a lowercase slug). The `users`, `mvp`, `safety`, and
+`verification` values must each be a non-empty array containing only non-empty strings.
+Invalid values report the failing field (and array index when applicable), exit with status
+`1`, and do not create a draft.
+
 ## What it checks
 
 - expected queue folders: `ready`, `in-progress`, and `built`
