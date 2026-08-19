@@ -47,8 +47,8 @@ export async function writeDraft(candidate, outputDir, options = {}) {
 export function validateCandidate(candidate) {
   const requiredStrings = ['name', 'summary', 'problem'];
   for (const key of requiredStrings) {
-    if (!candidate?.[key] || typeof candidate[key] !== 'string') {
-      throw new Error(`candidate.${key} is required`);
+    if (typeof candidate?.[key] !== 'string' || candidate[key].trim().length === 0) {
+      throw new Error(`candidate.${key} must be a non-empty string`);
     }
   }
 
@@ -56,6 +56,11 @@ export function validateCandidate(candidate) {
   for (const key of requiredLists) {
     if (!Array.isArray(candidate[key]) || candidate[key].length === 0) {
       throw new Error(`candidate.${key} must be a non-empty array`);
+    }
+    for (const [index, item] of candidate[key].entries()) {
+      if (typeof item !== 'string' || item.trim().length === 0) {
+        throw new Error(`candidate.${key}[${index}] must be a non-empty string`);
+      }
     }
   }
 
