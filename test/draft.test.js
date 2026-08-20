@@ -26,6 +26,20 @@ test('validates required arrays', () => {
   assert.throws(() => validateCandidate({ ...candidate, safety: [] }), /candidate.safety/u);
 });
 
+test('accepts lowercase slugs, including one-character names', () => {
+  assert.doesNotThrow(() => validateCandidate({ ...candidate, name: 'x' }));
+  assert.doesNotThrow(() => validateCandidate({ ...candidate, name: 'skill-2' }));
+});
+
+test('rejects leading, trailing, and repeated hyphens', () => {
+  for (const name of ['-bad', 'bad-', 'bad--slug']) {
+    assert.throws(
+      () => validateCandidate({ ...candidate, name }),
+      /candidate.name must be a lowercase slug/u
+    );
+  }
+});
+
 test('rejects blank scalar fields with field-specific errors', () => {
   for (const key of ['name', 'summary', 'problem']) {
     assert.throws(

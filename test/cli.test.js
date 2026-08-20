@@ -49,6 +49,43 @@ test('accepts documented draft options including --force', async () => {
   }
 });
 
+test('accepts a one-character lowercase slug', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-slug-'));
+  const input = join(workspace, 'candidate.json');
+  const output = join(workspace, 'drafts');
+  const candidate = JSON.parse(await readFile('fixtures/candidate.json', 'utf8'));
+  try {
+    await writeFile(input, JSON.stringify({ ...candidate, name: 'x' }));
+    await execFileAsync('node', ['src/cli.js', 'draft', input, '--out', output]);
+    assert.match(await readFile(join(output, 'x.md'), 'utf8'), /^# x$/mu);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('rejects invalid slugs without creating a draft', async () => {
+  const candidate = JSON.parse(await readFile('fixtures/candidate.json', 'utf8'));
+  for (const name of ['-bad', 'bad-', 'bad--slug']) {
+    const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-slug-'));
+    const input = join(workspace, 'candidate.json');
+    const output = join(workspace, 'drafts');
+    try {
+      await writeFile(input, JSON.stringify({ ...candidate, name }));
+      await assert.rejects(
+        execFileAsync('node', ['src/cli.js', 'draft', input, '--out', output]),
+        (error) => {
+          assert.equal(error.code, 1);
+          assert.match(error.stderr, /candidate.name must be a lowercase slug/u);
+          return true;
+        },
+      );
+      await assert.rejects(readFile(join(output, `${name}.md`)), /ENOENT/u);
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
+  }
+});
+
 test('rejects malformed draft values without creating a draft', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-invalid-'));
   const input = join(workspace, 'candidate.json');
