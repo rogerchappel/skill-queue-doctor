@@ -49,6 +49,8 @@ only from PRDs with `Status: ready` inside the `ready` folder.
 
 The CLI reads local files and writes only explicit draft outputs. It does not call GitHub, move PRDs, create repos, or modify queue status files.
 
+Draft names use lowercase slugs: one or more lowercase letters or digits, with single hyphens only between segments. For example, `x`, `skill`, and `skill-2` are valid; `-skill`, `skill-`, and `skill--2` are rejected before any draft is created.
+
 ## Limitations
 
 - Repo duplicates come from a supplied text inventory.

@@ -64,7 +64,7 @@ export function validateCandidate(candidate) {
     }
   }
 
-  if (!/^[a-z0-9][a-z0-9-]+$/u.test(candidate.name)) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(candidate.name)) {
     throw new Error('candidate.name must be a lowercase slug');
   }
 }
