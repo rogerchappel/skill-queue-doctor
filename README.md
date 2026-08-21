@@ -5,12 +5,19 @@
 ## Quickstart
 
 ```sh
-npm install -g skill-queue-doctor
-skill-queue-doctor --help
-skill-queue-doctor --version
-skill-queue-doctor audit fixtures/queue --repos fixtures/repos.txt --format json
-skill-queue-doctor draft fixtures/candidate.json --out tmp-drafts
+work_dir="$(mktemp -d)"
+git clone --depth 1 https://github.com/rogerchappel/skill-queue-doctor.git "$work_dir/source"
+npm install --prefix "$work_dir/run" "$work_dir/source"
+cli="$work_dir/run/node_modules/.bin/skill-queue-doctor"
+"$cli" --help
+"$cli" --version
+"$cli" audit "$work_dir/source/fixtures/queue" --repos "$work_dir/source/fixtures/repos.txt" --format json
+"$cli" draft "$work_dir/source/fixtures/candidate.json" --out "$work_dir/drafts"
 ```
+
+This installs the current default branch into a disposable directory, so it does not require
+an npm registry release or modify the global package installation. Remove `$work_dir` when
+you are finished.
 
 For local development:
 

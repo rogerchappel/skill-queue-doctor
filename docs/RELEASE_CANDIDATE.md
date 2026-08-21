@@ -6,10 +6,10 @@ ship
 
 ## Verification plan
 
-- `npm test` - pass, 6 tests
+- `npm test` - pass
 - `npm run check` - pass
 - `npm run smoke` - pass, reports ready shortage and duplicate fixtures
-- `node src/cli.js draft fixtures/candidate.json --out /tmp/skill-queue-doctor-drafts` - pass
+- `npm run package:smoke` - pass; installs the repository package into a disposable prefix and runs the documented first-use commands
 
 ## Dry-run guarantees
 
