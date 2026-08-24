@@ -31,6 +31,9 @@ node src/cli.js draft fixtures/candidate.json --out tmp-drafts
 Invalid commands, unknown options, extra arguments, missing option values, and unsupported
 `--format` values print actionable usage text and exit with status `2`. Operational failures,
 such as unreadable inputs, exit with status `1`; successful commands exit with status `0`.
+The audit ideas root itself must exist, be a directory, and be readable. Missing lane folders
+inside a valid root are queue findings, not operational failures: the command exits `0` and
+lists them in `missingFolders` (JSON) or `Missing folders` (Markdown).
 
 Draft candidate JSON must be an object whose `name`, `summary`, and `problem` values are
 non-empty strings (`name` must also be a lowercase slug). The `users`, `mvp`, `safety`, and
