@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { auditQueue, parseRepoInventory, parseStatus } from '../src/audit.js';
 import { formatJsonReport, formatMarkdownReport } from '../src/report.js';
 
@@ -22,6 +25,31 @@ test('audits queue lanes and duplicate repo names', async () => {
   assert.equal(report.readyShortage, 1);
   assert.deepEqual(report.missingFolders, []);
   assert.equal(report.duplicates[0].repo, 'repo-to-content-skill');
+});
+
+test('rejects a missing or non-directory ideas root', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-root-'));
+  const file = join(workspace, 'ideas.txt');
+  await writeFile(file, 'not a directory');
+  await assert.rejects(auditQueue(join(workspace, 'missing')), /Ideas root does not exist:/u);
+  await assert.rejects(auditQueue(file), /Ideas root is not a directory:/u);
+});
+
+test('reports absent lane folders for an existing ideas root', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-lanes-'));
+  const report = await auditQueue(workspace);
+  assert.deepEqual(report.missingFolders, ['ready', 'in-progress', 'built']);
+  assert.equal(report.readyShortage, 2);
+});
+
+test('rejects an unreadable ideas root', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-unreadable-'));
+  await chmod(workspace, 0o000);
+  try {
+    await assert.rejects(auditQueue(workspace), /Ideas root is not readable:/u);
+  } finally {
+    await chmod(workspace, 0o700);
+  }
 });
 
 test('excludes cross-lane statuses from counts and reports each mismatch', async () => {
