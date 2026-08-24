@@ -5,6 +5,8 @@ const LANES = ['ready', 'in-progress', 'built'];
 const KNOWN_STATUSES = new Set(['ready', 'in-progress', 'built', 'ship', 'incubate', 'kill/merge']);
 
 export async function auditQueue(ideasDir, options = {}) {
+  await validateIdeasDirectory(ideasDir);
+
   const repoNames = new Set(options.repoNames ?? []);
   const lanes = {};
   const missingFolders = [];
@@ -64,6 +66,24 @@ export async function auditQueue(ideasDir, options = {}) {
     duplicates,
     readyShortage: Math.max(0, 2 - lanes.ready.count)
   };
+}
+
+async function validateIdeasDirectory(ideasDir) {
+  let result;
+  try {
+    result = await stat(ideasDir);
+  } catch (error) {
+    if (error.code === 'ENOENT') throw new Error(`Ideas root does not exist: ${ideasDir}`);
+    if (error.code === 'EACCES' || error.code === 'EPERM') throw new Error(`Ideas root is not readable: ${ideasDir}`);
+    throw error;
+  }
+  if (!result.isDirectory()) throw new Error(`Ideas root is not a directory: ${ideasDir}`);
+  try {
+    await readdir(ideasDir);
+  } catch (error) {
+    if (error.code === 'EACCES' || error.code === 'EPERM') throw new Error(`Ideas root is not readable: ${ideasDir}`);
+    throw error;
+  }
 }
 
 export function parseRepoInventory(text) {
