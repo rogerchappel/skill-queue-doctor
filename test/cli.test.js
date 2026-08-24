@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -37,6 +37,45 @@ test('accepts documented audit option forms', async () => {
   ]);
   const report = JSON.parse(stdout);
   assert.equal(report.lanes.ready.count + report.lanes['in-progress'].count + report.lanes.built.count, 3);
+});
+
+test('rejects invalid ideas roots in markdown and JSON modes', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-root-'));
+  const file = join(workspace, 'ideas.txt');
+  await writeFile(file, 'not a directory');
+  for (const [target, format, message] of [
+    [join(workspace, 'missing'), 'markdown', /Ideas root does not exist:/u],
+    [file, 'json', /Ideas root is not a directory:/u],
+  ]) {
+    await assert.rejects(execFileAsync('node', ['src/cli.js', 'audit', target, '--format', format]), (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, message);
+      assert.equal(error.stdout, '');
+      return true;
+    });
+  }
+});
+
+test('reports missing lane folders from an existing root in both formats', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-lanes-'));
+  const markdown = await execFileAsync('node', ['src/cli.js', 'audit', workspace]);
+  const json = await execFileAsync('node', ['src/cli.js', 'audit', workspace, '--format', 'json']);
+  assert.match(markdown.stdout, /## Missing folders\n- ready\n- in-progress\n- built/u);
+  assert.deepEqual(JSON.parse(json.stdout).missingFolders, ['ready', 'in-progress', 'built']);
+});
+
+test('rejects an unreadable ideas root', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-unreadable-'));
+  await chmod(workspace, 0o000);
+  try {
+    await assert.rejects(execFileAsync('node', ['src/cli.js', 'audit', workspace, '--format', 'json']), (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Ideas root is not readable:/u);
+      return true;
+    });
+  } finally {
+    await chmod(workspace, 0o700);
+  }
 });
 
 test('accepts documented draft options including --force', async () => {
