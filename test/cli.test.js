@@ -39,6 +39,21 @@ test('accepts documented audit option forms', async () => {
   assert.equal(report.lanes.ready.count + report.lanes['in-progress'].count + report.lanes.built.count, 3);
 });
 
+test('reports fenced status examples as missing in JSON and Markdown audits', async () => {
+  const json = await execFileAsync('node', [
+    'src/cli.js', 'audit', 'fixtures/fenced-status', '--format', 'json',
+  ]);
+  const report = JSON.parse(json.stdout);
+  assert.equal(report.lanes.ready.count, 1);
+  assert.equal(report.warnings[0].code, 'missing-status');
+
+  const markdown = await execFileAsync('node', [
+    'src/cli.js', 'audit', 'fixtures/fenced-status', '--format', 'markdown',
+  ]);
+  assert.match(markdown.stdout, /- ready: 1/u);
+  assert.match(markdown.stdout, /ready\/example-only\.md: Missing Status line/u);
+});
+
 test('rejects invalid ideas roots in markdown and JSON modes', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-root-'));
   const file = join(workspace, 'ideas.txt');
