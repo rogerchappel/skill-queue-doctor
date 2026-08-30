@@ -94,8 +94,31 @@ export function parseRepoInventory(text) {
 }
 
 export function parseStatus(markdown) {
-  const match = markdown.match(/^Status:\s*(.+)$/imu);
-  return match?.[1]?.trim().toLowerCase() ?? null;
+  let fence = null;
+
+  for (const line of markdown.split(/\r?\n/u)) {
+    const fenceLine = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/u);
+    if (fenceLine) {
+      const [, marker, suffix] = fenceLine;
+      if (!fence) {
+        fence = { character: marker[0], length: marker.length };
+      } else if (
+        marker[0] === fence.character
+        && marker.length >= fence.length
+        && suffix.trim() === ''
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+
+    if (!fence) {
+      const match = line.match(/^Status:\s*(.+)$/iu);
+      if (match) return match[1].trim().toLowerCase();
+    }
+  }
+
+  return null;
 }
 
 async function existsDirectory(target) {
