@@ -55,6 +55,10 @@ misplaced statuses remain listed in report details and produce warnings, but
 do not satisfy lane inventory. Consequently, the ready shortage is calculated
 only from PRDs with `Status: ready` inside the `ready` folder.
 
+Status parsing ignores fenced code blocks, including language-tagged examples.
+A PRD needs a `Status:` line in ordinary Markdown content; a `Status: ready`
+example inside a code fence does not satisfy queue inventory.
+
 ## Safety
 
 The CLI reads local files and writes only explicit draft outputs. It does not call GitHub, move PRDs, create repos, or modify queue status files.
