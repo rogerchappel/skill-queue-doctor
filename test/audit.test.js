@@ -10,6 +10,15 @@ test('parses status lines case-insensitively', () => {
   assert.equal(parseStatus('# Demo\n\nStatus: In-Progress\n'), 'in-progress');
 });
 
+test('ignores status examples inside fenced code blocks', () => {
+  assert.equal(parseStatus('# Demo\n\n```text\nStatus: ready\n```\n'), null);
+  assert.equal(parseStatus('# Demo\n\n~~~markdown\nSTATUS: built\n~~~\n'), null);
+  assert.equal(
+    parseStatus('# Demo\n\n```text\nStatus: built\n```\n\nStAtUs: ReAdY\n'),
+    'ready',
+  );
+});
+
 test('parses repo inventory comments and blanks', () => {
   assert.deepEqual(parseRepoInventory('# repos\n\nalpha\n beta \n'), ['alpha', 'beta']);
 });
@@ -25,6 +34,21 @@ test('audits queue lanes and duplicate repo names', async () => {
   assert.equal(report.readyShortage, 1);
   assert.deepEqual(report.missingFolders, []);
   assert.equal(report.duplicates[0].repo, 'repo-to-content-skill');
+});
+
+test('does not count a fenced status example as queue inventory', async () => {
+  const report = await auditQueue('fixtures/fenced-status');
+
+  assert.equal(report.lanes.ready.count, 1);
+  assert.equal(report.readyShortage, 1);
+  assert.deepEqual(report.warnings, [
+    {
+      lane: 'ready',
+      file: 'example-only.md',
+      code: 'missing-status',
+      message: 'Missing Status line',
+    },
+  ]);
 });
 
 test('rejects a missing or non-directory ideas root', async () => {
