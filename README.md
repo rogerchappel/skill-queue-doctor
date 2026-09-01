@@ -55,6 +55,10 @@ misplaced statuses remain listed in report details and produce warnings, but
 do not satisfy lane inventory. Consequently, the ready shortage is calculated
 only from PRDs with `Status: ready` inside the `ready` folder.
 
+Lane discovery considers only regular files whose names end in `.md` and
+continues to exclude `README.md`. Directories, symbolic links, and other
+non-file entries are ignored even when their names end in `.md`.
+
 Status parsing ignores fenced code blocks, including language-tagged examples.
 A PRD needs a `Status:` line in ordinary Markdown content; a `Status: ready`
 example inside a code fence does not satisfy queue inventory.
