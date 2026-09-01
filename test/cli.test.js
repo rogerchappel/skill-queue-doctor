@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -52,6 +52,23 @@ test('reports fenced status examples as missing in JSON and Markdown audits', as
   ]);
   assert.match(markdown.stdout, /- ready: 1/u);
   assert.match(markdown.stdout, /ready\/example-only\.md: Missing Status line/u);
+});
+
+test('ignores non-file Markdown lane entries in JSON and Markdown audits', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-entries-'));
+  await Promise.all(['ready', 'in-progress', 'built'].map((lane) => mkdir(join(workspace, lane))));
+  await writeFile(join(workspace, 'ready', 'valid.md'), '# Valid\n\nStatus: ready\n');
+  await mkdir(join(workspace, 'ready', 'nested.md'));
+
+  const json = await execFileAsync('node', ['src/cli.js', 'audit', workspace, '--format', 'json']);
+  const report = JSON.parse(json.stdout);
+  assert.equal(report.lanes.ready.count, 1);
+  assert.deepEqual(report.lanes.ready.files.map(({ file }) => file), ['valid.md']);
+  assert.deepEqual(report.warnings, []);
+
+  const markdown = await execFileAsync('node', ['src/cli.js', 'audit', workspace, '--format', 'markdown']);
+  assert.match(markdown.stdout, /- ready: 1/u);
+  assert.doesNotMatch(markdown.stdout, /nested\.md/u);
 });
 
 test('rejects invalid ideas roots in markdown and JSON modes', async () => {

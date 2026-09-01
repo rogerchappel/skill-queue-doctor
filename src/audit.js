@@ -21,8 +21,9 @@ export async function auditQueue(ideasDir, options = {}) {
       continue;
     }
 
-    const files = (await readdir(laneDir))
-      .filter((file) => file.endsWith('.md') && file !== 'README.md')
+    const files = (await readdir(laneDir, { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && entry.name !== 'README.md')
+      .map((entry) => entry.name)
       .sort();
 
     const parsed = [];
