@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { auditQueue, parseRepoInventory, parseStatus } from '../src/audit.js';
@@ -34,6 +34,20 @@ test('audits queue lanes and duplicate repo names', async () => {
   assert.equal(report.readyShortage, 1);
   assert.deepEqual(report.missingFolders, []);
   assert.equal(report.duplicates[0].repo, 'repo-to-content-skill');
+});
+
+test('ignores non-file Markdown entries in queue lanes', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-entries-'));
+  await Promise.all(['ready', 'in-progress', 'built'].map((lane) => mkdir(join(workspace, lane))));
+  await writeFile(join(workspace, 'ready', 'valid.md'), '# Valid\n\nStatus: ready\n');
+  await mkdir(join(workspace, 'ready', 'nested.md'));
+
+  const report = await auditQueue(workspace, { repoNames: ['nested'] });
+
+  assert.equal(report.lanes.ready.count, 1);
+  assert.deepEqual(report.lanes.ready.files, [{ file: 'valid.md', slug: 'valid', status: 'ready' }]);
+  assert.deepEqual(report.warnings, []);
+  assert.deepEqual(report.duplicates, []);
 });
 
 test('does not count a fenced status example as queue inventory', async () => {
