@@ -23,6 +23,32 @@ test('parses repo inventory comments and blanks', () => {
   assert.deepEqual(parseRepoInventory('# repos\n\nalpha\n beta \n'), ['alpha', 'beta']);
 });
 
+test('matches repo inventory case-insensitively while preserving report values', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-case-'));
+  await Promise.all(['ready', 'in-progress', 'built'].map((lane) => mkdir(join(workspace, lane))));
+  await Promise.all([
+    writeFile(join(workspace, 'ready', 'my-repo.md'), '# My Repo\n\nStatus: ready\n'),
+    writeFile(join(workspace, 'ready', 'my-reporter.md'), '# Near Miss\n\nStatus: ready\n'),
+  ]);
+
+  const report = await auditQueue(workspace, {
+    repoNames: parseRepoInventory('# canonical inventory\n\nMy-Repo\nMY-REPO\nmy-reporter-tool\n'),
+  });
+
+  assert.deepEqual(report.duplicates, [
+    { lane: 'ready', file: 'my-repo.md', repo: 'My-Repo' },
+  ]);
+  assert.deepEqual(report.lanes.ready.files.map(({ slug }) => slug), ['my-repo', 'my-reporter']);
+  assert.match(formatMarkdownReport(report), /ready\/my-repo\.md: matches My-Repo/u);
+});
+
+test('retains exact-case duplicate matching', async () => {
+  const report = await auditQueue('fixtures/queue', { repoNames: ['repo-to-content-skill'] });
+  assert.deepEqual(report.duplicates, [
+    { lane: 'ready', file: 'repo-to-content-skill.md', repo: 'repo-to-content-skill' },
+  ]);
+});
+
 test('audits queue lanes and duplicate repo names', async () => {
   const report = await auditQueue('fixtures/queue', {
     repoNames: ['repo-to-content-skill']

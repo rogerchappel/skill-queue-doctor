@@ -39,6 +39,23 @@ test('accepts documented audit option forms', async () => {
   assert.equal(report.lanes.ready.count + report.lanes['in-progress'].count + report.lanes.built.count, 3);
 });
 
+test('reports mixed-case inventory duplicates once with original values', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-cli-case-'));
+  const ideas = join(workspace, 'ideas');
+  await Promise.all(['ready', 'in-progress', 'built'].map((lane) => mkdir(join(ideas, lane), { recursive: true })));
+  await writeFile(join(ideas, 'ready', 'my-repo.md'), '# My Repo\n\nStatus: ready\n');
+  const inventory = join(workspace, 'repos.txt');
+  await writeFile(inventory, '# repositories\n\nMy-Repo\nMY-REPO\n');
+
+  const { stdout } = await execFileAsync('node', [
+    'src/cli.js', 'audit', ideas, '--repos', inventory, '--format', 'json',
+  ]);
+
+  assert.deepEqual(JSON.parse(stdout).duplicates, [
+    { lane: 'ready', file: 'my-repo.md', repo: 'My-Repo' },
+  ]);
+});
+
 test('reports fenced status examples as missing in JSON and Markdown audits', async () => {
   const json = await execFileAsync('node', [
     'src/cli.js', 'audit', 'fixtures/fenced-status', '--format', 'json',
