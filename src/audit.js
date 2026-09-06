@@ -7,7 +7,11 @@ const KNOWN_STATUSES = new Set(['ready', 'in-progress', 'built', 'ship', 'incuba
 export async function auditQueue(ideasDir, options = {}) {
   await validateIdeasDirectory(ideasDir);
 
-  const repoNames = new Set(options.repoNames ?? []);
+  const repoNames = new Map();
+  for (const repoName of options.repoNames ?? []) {
+    const normalized = normalizeRepoName(repoName);
+    if (!repoNames.has(normalized)) repoNames.set(normalized, repoName);
+  }
   const lanes = {};
   const missingFolders = [];
   const warnings = [];
@@ -46,8 +50,9 @@ export async function auditQueue(ideasDir, options = {}) {
         });
       }
 
-      if (repoNames.has(slug)) {
-        duplicates.push({ lane, file, repo: slug });
+      const matchingRepo = repoNames.get(normalizeRepoName(slug));
+      if (matchingRepo !== undefined) {
+        duplicates.push({ lane, file, repo: matchingRepo });
       }
 
       parsed.push({ file, slug, status });
@@ -67,6 +72,10 @@ export async function auditQueue(ideasDir, options = {}) {
     duplicates,
     readyShortage: Math.max(0, 2 - lanes.ready.count)
   };
+}
+
+function normalizeRepoName(value) {
+  return value.toLowerCase();
 }
 
 async function validateIdeasDirectory(ideasDir) {
