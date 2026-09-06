@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Match repository inventory names case-insensitively while preserving original report values.
+
 - Exclude missing, unknown, and cross-lane statuses from lane inventory counts
   and report a warning when a known status disagrees with its folder.
 

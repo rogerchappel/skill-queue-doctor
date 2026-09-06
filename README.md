@@ -46,7 +46,8 @@ Invalid values report the failing field (and array index when applicable), exit 
 - expected queue folders: `ready`, `in-progress`, and `built`
 - markdown PRDs with missing or unknown `Status:` values, or a known status that
   does not match the containing lane
-- duplicate idea names that already exist in a repo inventory
+- duplicate idea names that already exist in a repo inventory, compared
+  case-insensitively like GitHub repository names
 - ready-lane shortages
 
 Lane counts include only PRDs whose normalized `Status:` matches their
@@ -71,6 +72,9 @@ Draft names use lowercase slugs: one or more lowercase letters or digits, with s
 
 ## Limitations
 
-- Repo duplicates come from a supplied text inventory.
+- Repo duplicates come from a supplied text inventory. Matching is
+  case-insensitive, while JSON and Markdown reports preserve the original PRD
+  filename, candidate slug, and first matching inventory value. Repeated
+  inventory names that differ only by case produce one duplicate finding.
 - PRD parsing is intentionally conservative and line-based.
 - Generated drafts are starter PRDs that still require human or agent review.
