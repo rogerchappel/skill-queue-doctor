@@ -19,10 +19,12 @@ This installs the current default branch into a disposable directory, so it does
 an npm registry release or modify the global package installation. Remove `$work_dir` when
 you are finished.
 
-For local development:
+For local development, `npm run validate` runs the syntax check and test suite.
+The CI/release gate `npm run release:check` runs that validation first, then the
+fixture smoke test and packaged-install smoke test.
 
 ```sh
-npm test
+npm run validate
 npm run smoke
 node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format json
 node src/cli.js draft fixtures/candidate.json --out tmp-drafts

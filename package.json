@@ -11,7 +11,8 @@
     "check": "node --check src/*.js test/*.test.js",
     "smoke": "node src/cli.js audit fixtures/queue --repos fixtures/repos.txt --format markdown",
     "package:smoke": "node scripts/package-smoke.js",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
+    "validate": "npm run check && npm test",
+    "release:check": "npm run validate && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "agent-skills",
