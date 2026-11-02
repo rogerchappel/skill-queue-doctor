@@ -56,6 +56,38 @@ test('reports mixed-case inventory duplicates once with original values', async 
   ]);
 });
 
+test('counts only valid ready-folder PRDs toward CLI shortage in JSON and Markdown', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'skill-queue-doctor-shortage-'));
+  const ideas = join(workspace, 'ideas');
+  await Promise.all(['ready', 'in-progress', 'built'].map((lane) => mkdir(join(ideas, lane), { recursive: true })));
+  await writeFile(join(ideas, 'ready', 'one.md'), '# One\n\nStatus: ready\n');
+  await writeFile(join(ideas, 'ready', 'invalid.md'), '# Invalid\n\nStatus: waiting\n');
+  await writeFile(join(ideas, 'ready', 'fenced.md'), '# Fenced\n\n```md\nStatus: ready\n```\n');
+  await writeFile(join(ideas, 'in-progress', 'misplaced.md'), '# Misplaced\n\nStatus: ready\n');
+
+  try {
+    const json = await execFileAsync('node', ['src/cli.js', 'audit', ideas, '--format', 'json']);
+    const report = JSON.parse(json.stdout);
+    assert.equal(report.lanes.ready.count, 1);
+    assert.equal(report.readyShortage, 1);
+    assert.deepEqual(report.warnings.map(({ lane, file, code }) => ({ lane, file, code })), [
+      { lane: 'ready', file: 'fenced.md', code: 'missing-status' },
+      { lane: 'ready', file: 'invalid.md', code: 'unknown-status' },
+      { lane: 'in-progress', file: 'misplaced.md', code: 'status-lane-mismatch' },
+    ]);
+
+    const markdown = await execFileAsync('node', ['src/cli.js', 'audit', ideas, '--format', 'markdown']);
+    assert.match(markdown.stdout, /- ready: 1/u);
+    assert.match(markdown.stdout, /Ready shortage: 1/u);
+    for (const finding of ['ready/fenced.md: Missing Status line', 'ready/invalid.md: Unknown status: waiting',
+      'in-progress/misplaced.md: Status ready does not match containing lane in-progress']) {
+      assert.ok(markdown.stdout.includes(finding), `Markdown should include ${finding}`);
+    }
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
 test('reports fenced status examples as missing in JSON and Markdown audits', async () => {
   const json = await execFileAsync('node', [
     'src/cli.js', 'audit', 'fixtures/fenced-status', '--format', 'json',
