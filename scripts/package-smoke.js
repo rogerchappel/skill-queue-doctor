@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -41,18 +41,26 @@ try {
     cwd: consumer,
     stdio: 'ignore',
   });
+  const installedPackage = join(installPrefix, 'node_modules', 'skill-queue-doctor');
   const bin = join(installPrefix, 'node_modules', '.bin', 'skill-queue-doctor');
   execFileSync(bin, ['--help'], { cwd: consumer, stdio: 'ignore' });
   execFileSync(bin, ['--version'], { cwd: consumer, stdio: 'ignore' });
-  const fixtureRoot = join(installPrefix, 'node_modules', 'skill-queue-doctor', 'fixtures');
+  const fixtureRoot = join(installedPackage, 'fixtures');
   const fixtureRepos = readFileSync(join(fixtureRoot, 'repos.txt'), 'utf8');
   if (!fixtureRepos.trim()) throw new Error('installed fixture repository inventory is empty');
-  execFileSync(bin, ['audit', join(fixtureRoot, 'queue'), '--format', 'json'], {
+  const sourceCli = join(root, 'src', 'cli.js');
+  const installedCli = join(installedPackage, 'src', 'cli.js');
+  if (resolve(sourceCli) === resolve(installedCli)) {
+    throw new Error('consumer smoke is invoking the repository checkout, not the installed tarball');
+  }
+  execFileSync(bin, ['audit', join(fixtureRoot, 'queue'), '--repos', join(fixtureRoot, 'repos.txt'), '--format', 'json'], {
     cwd: consumer,
     stdio: 'ignore',
   });
+  const consumerCandidate = join(consumer, 'candidate.json');
+  writeFileSync(consumerCandidate, readFileSync(join(fixtureRoot, 'candidate.json'), 'utf8'));
   const drafts = join(consumer, 'drafts');
-  execFileSync(bin, ['draft', join(fixtureRoot, 'candidate.json'), '--out', drafts], {
+  execFileSync(bin, ['draft', consumerCandidate, '--out', drafts], {
     cwd: consumer,
     stdio: 'ignore',
   });
